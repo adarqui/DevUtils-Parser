@@ -12,6 +12,6 @@ cabal-version:       >=1.8
 
 library
   exposed-modules:     System.DevUtils, System.DevUtils.Parser, System.DevUtils.Data.List
-  build-depends:       base ==4.7.*, HUnit ==1.2.5.*, parsec ==3.1.5, regex-compat, bytestring, unix ==2.7.0.*, transformers ==0.3.0.*, directory ==1.2.1.*
+  build-depends:       base ==4.7.*, HUnit ==1.2.5.*, parsec ==3.1.5, regex-compat, bytestring, unix ==2.7.0.*, transformers ==0.4.1.*, directory ==1.2.1.*
   GHC-Options:         -O3 -Wall -threaded -rtsopts
   hs-source-dirs:      src
