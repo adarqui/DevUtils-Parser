@@ -6,8 +6,6 @@ module System.DevUtils.Redis (
 import qualified System.DevUtils.Auth as A
 import qualified System.DevUtils.Connection as C
 
-import Data.Maybe
-
 data Redis = Redis {
  _auth :: Maybe A.Auth,
  _con :: C.Connection
