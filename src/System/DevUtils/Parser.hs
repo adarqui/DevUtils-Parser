@@ -12,6 +12,7 @@ import qualified System.DevUtils.Redis as R
 import qualified System.DevUtils.Ssh as S
 import qualified System.DevUtils.Auth as A
 import qualified System.DevUtils.Connection as C
+import qualified System.DevUtils.Session as Ses
 import System.DevUtils.Url
 
 
@@ -48,27 +49,12 @@ parseUrlAuth = do
  pass <- try $ optionMaybe $ (string ":" >> password)
  (putState $ UrlAuth A.Auth { A._user = user, A._pass = pass }) >> getState >>= return
 
-
 -- con:// wrapper
-parseUrlConnectionWrapper :: String -> C.ConnectionType -> St Url
-parseUrlConnectionWrapper prefix conType = do
- _ <- string $ prefix ++ "://"
- _ <- parseUrlConnection
+parseUrlConnectionWrapper :: C.Connection -> String -> C.ConnectionType -> St Url
+parseUrlConnectionWrapper defCon prefix conType = do
+ _ <- parseUrlConnection defCon
  modifyState (\(UrlConnection x) -> UrlConnection x { C._type = conType })
  getState >>= return
-
--- tcp://
-parseUrlConnectionTCP :: St Url
-parseUrlConnectionTCP = parseUrlConnectionWrapper "tcp" C.TCP
-
--- udp://
-parseUrlConnectionUDP :: St Url
-parseUrlConnectionUDP = parseUrlConnectionWrapper "udp" C.UDP
-
--- unix://
-parseUrlConnectionUNIX :: St Url
-parseUrlConnectionUNIX = parseUrlConnectionWrapper "unix" C.UNIX
-
 
 {-
  - con://unix
@@ -76,9 +62,15 @@ parseUrlConnectionUNIX = parseUrlConnectionWrapper "unix" C.UNIX
  -}
 
 parseUrlConnection' :: St Url
-parseUrlConnection' = do
- _ <- string "con://"
- parseUrlConnection
+parseUrlConnection' = parseUrlConnection'' C.defaultConnection
+
+parseUrlConnection'' :: C.Connection -> St Url
+parseUrlConnection'' defCon = do
+ do { (try (string "con://")) ; parseUrlConnectionWrapper defCon "con" C.UNKNOWN }
+ <|> do { (try (string "tcp://")) ; parseUrlConnectionWrapper defCon "tcp" C.TCP }
+ <|> do { (try (string "udp://")) ; parseUrlConnectionWrapper defCon "udp" C.UDP }
+ <|> do { (try (string "unix://")) ; parseUrlConnectionWrapper defCon "unix" C.UNIX }
+ <?> "prefix"
 
 
 {-
@@ -86,11 +78,39 @@ parseUrlConnection' = do
  - host:port
  -}
 
-parseUrlConnection :: St Url
-parseUrlConnection = do
+parseUrlConnection :: C.Connection -> St Url
+parseUrlConnection defCon = do
  dest <- field
+ let portNum = C._port defCon
  maybePort <- try $ optionMaybe $ (string ":" >> port)
- (putState $ UrlConnection C.Connection { C._dest = dest , C._port = (maybe 0 (\x -> read x :: Integer) maybePort), C._type = C.UNKNOWN }) >> getState >>= return
+ (putState $ UrlConnection C.Connection { C._dest = dest , C._port = (maybe portNum (\x -> read x :: Integer) maybePort), C._type = C.UNKNOWN }) >> getState >>= return
+
+
+{-
+ - session
+ -}
+parseUrlSession' :: St Url
+parseUrlSession'= do
+ parseUrlSession'' "session"
+
+parseUrlSession'' :: String -> St Url
+parseUrlSession'' arg = do
+ _ <- string $ arg ++ "://"
+ parseUrlSession Ses.defaultSession
+
+parseUrlSession :: Ses.Session -> St Url
+parseUrlSession defSes = do
+ putState $ UrlSession defSes
+ auth <- optionMaybe (try parseUrlAuth)
+ _ <- case auth of
+  Just (UrlAuth val) -> do
+   _ <- char '@'
+   (putState $ UrlSession Ses.Session { Ses._auth = Just val }) >> getState >>= return
+  _ -> do
+   return UrlNone
+ (UrlSession st) <- getState
+ (Just (UrlConnection con)) <- optionMaybe (parseUrlConnection'' (Ses._con defSes))
+ (putState $ UrlSession st { Ses._con = con }) >> getState >>= return
 
 
 {-
@@ -109,35 +129,41 @@ parseUrlRedis' = do
 
 parseUrlRedis :: St Url
 parseUrlRedis = do
- putState $ UrlRedis R.defaultRedis
- auth <- optionMaybe (try parseUrlAuth)
- _ <- case auth of
-  Just (UrlAuth val) -> do
-   _ <- char '@'
-   (putState $ UrlRedis R.Redis { R._auth = Just val }) >> getState >>= return
-  _ -> do
-   return UrlNone
- (UrlRedis st) <- getState
- (Just (UrlConnection con)) <- optionMaybe (parseUrlConnection)
- (putState $ UrlRedis st { R._con = con }) >> getState >>= return
+ (UrlSession ses) <- parseUrlSession R.defaultRedisSession <?> "session"
+ (putState $ UrlRedis R.Redis { R._ses = ses }) >> getState >>= return
 
 
 {-
- - should make redis:// ssh:// ftp:// etc all use one parser, and then just parse the additional options for the specific type of connection
-parseUrlSsh :: Parser Url
+ - ssh://host
+ - ssh://host:port
+ - ssh://host:port/options
+ - ssh://host/options
+ - ssh://user:(pass)@host
+ - ssh://user:(pass)@host/options
+ - etc.
+ -}
+parseUrlSsh' :: St Url
+parseUrlSsh' = do
+ _ <- string "ssh://"
+ parseUrlSsh
+
+parseUrlSsh :: St Url
 parseUrlSsh = do
- string "ssh://"
- return $ UrlSsh { }
--}
+ putState $ UrlSsh S.defaultSsh
+ (UrlSsh ssh) <- getState
+ (UrlSession ses) <- parseUrlSession S.defaultSshSession <?> "session"
+ (putState $ UrlSsh ssh { S._ses = ses }) >> getState >>= return
+
+
+{- URL PARSING -}
 
 parseUrl :: St Url
 parseUrl = do
  (try parseUrlAuth')
+ <|> (try parseUrlSession')
  <|> (try parseUrlRedis')
+ <|> (try parseUrlSsh')
  <|> (try parseUrlConnection')
- <|> (try parseUrlConnectionTCP)
- <|> (try parseUrlConnectionUDP)
- <|> (try parseUrlConnectionUNIX)
  <?> "url"
 
 runUrl' :: St Url -> String -> Either String Url
@@ -148,20 +174,3 @@ runUrl' p input = do
 
 runUrl :: String -> Either String Url
 runUrl input = runUrl' parseUrl input
-
-
-{- broken
---parseArgvWord = manyTill (anyChar) (try $ string ":::")
-parseArgvWord = many letter
-
-parseArgv = sepBy parseArgvWord (string ":::")
-
-runArgv' :: Parser [String] -> String -> Either String [String]
-runArgv' p input = do
- case (parse p "Argv" input) of
-  Left err -> Left $ "Parse error: " ++ show err
-  Right val -> Right val
-
-runArgv :: String -> Either String [String]
-runArgv input = runArgv' parseArgv input
--}
