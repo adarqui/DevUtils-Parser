@@ -1,10 +1,12 @@
 module System.DevUtils.Parser (
  parseUrl,
- runUrl
+ runUrl,
 ) where
 
 import Text.Parsec
 import Text.Parsec.String
+
+import qualified Control.Applicative as APP
 
 import qualified System.DevUtils.Redis as R
 import qualified System.DevUtils.Ssh as S
@@ -20,7 +22,8 @@ password = between (char '(') (char ')') (many1 $ noneOf "()")
 field = many1 $ noneOf ": "
 port = do
  s <- try (many1 digit) <?> "digits"
- if (read s :: Integer) > 65535 then return "port too large" else return s
+ let i = read s :: Integer
+ if (0 >= i || i > 65535) then return "port too large" else return s
 
 
 {-
@@ -46,37 +49,25 @@ parseUrlAuth = do
  (putState $ UrlAuth A.Auth { A._user = user, A._pass = pass }) >> getState >>= return
 
 
-{-
- - tcp://
- -}
+-- con:// wrapper
+parseUrlConnectionWrapper :: String -> C.ConnectionType -> St Url
+parseUrlConnectionWrapper prefix conType = do
+ _ <- string $ prefix ++ "://"
+ _ <- parseUrlConnection
+ modifyState (\(UrlConnection x) -> UrlConnection x { C._type = conType })
+ getState >>= return
+
+-- tcp://
 parseUrlConnectionTCP :: St Url
-parseUrlConnectionTCP = do
- _ <- string "tcp://"
- _ <- parseUrlConnection
- modifyState (\(UrlConnection x) -> UrlConnection x { C._type = C.TCP })
- getState >>= return
+parseUrlConnectionTCP = parseUrlConnectionWrapper "tcp" C.TCP
 
-
-{-
- - udp://
- -}
+-- udp://
 parseUrlConnectionUDP :: St Url
-parseUrlConnectionUDP = do
- _ <- string "udp://"
- _ <- parseUrlConnection
- modifyState (\(UrlConnection x) -> UrlConnection x { C._type = C.UDP })
- getState >>= return
+parseUrlConnectionUDP = parseUrlConnectionWrapper "udp" C.UDP
 
-
-{-
- - unix://
- -}
+-- unix://
 parseUrlConnectionUNIX :: St Url
-parseUrlConnectionUNIX = do
- _ <- string "unix://"
- _ <- parseUrlConnection
- modifyState (\(UrlConnection x) -> UrlConnection x { C._type = C.UNIX, C._port = 0 })
- getState >>= return
+parseUrlConnectionUNIX = parseUrlConnectionWrapper "unix" C.UNIX
 
 
 {-
@@ -157,3 +148,20 @@ runUrl' p input = do
 
 runUrl :: String -> Either String Url
 runUrl input = runUrl' parseUrl input
+
+
+{- broken
+--parseArgvWord = manyTill (anyChar) (try $ string ":::")
+parseArgvWord = many letter
+
+parseArgv = sepBy parseArgvWord (string ":::")
+
+runArgv' :: Parser [String] -> String -> Either String [String]
+runArgv' p input = do
+ case (parse p "Argv" input) of
+  Left err -> Left $ "Parse error: " ++ show err
+  Right val -> Right val
+
+runArgv :: String -> Either String [String]
+runArgv input = runArgv' parseArgv input
+-}

@@ -13,14 +13,15 @@ cabal-version:       >=1.8
 library
   exposed-modules:
    System.DevUtils
+   System.DevUtils.Launch
    System.DevUtils.Parser
-   System.DevUtils.Data.List
    System.DevUtils.Url
    System.DevUtils.Auth
    System.DevUtils.Redis
    System.DevUtils.Ssh
    System.DevUtils.Connection
    System.DevUtils.Misc
+   System.DevUtils.Data.List
   build-depends:       base ==4.7.*, HUnit ==1.2.5.*, parsec ==3.1.5, regex-compat, bytestring, unix ==2.7.0.*, transformers ==0.4.1.*, directory ==1.2.1.*
   GHC-Options:         -O3 -Wall -rtsopts
   hs-source-dirs:      src
