@@ -10,6 +10,8 @@ import qualified Control.Applicative as APP
 
 import qualified System.DevUtils.Redis as R
 import qualified System.DevUtils.Ssh as S
+import qualified System.DevUtils.ZMQ as ZMQ
+import qualified System.DevUtils.File as F
 import qualified System.DevUtils.Auth as A
 import qualified System.DevUtils.Connection as C
 import qualified System.DevUtils.Session as Ses
@@ -114,7 +116,10 @@ parseUrlSession defSes = do
   _ -> do
    return CmdNone
  (UrlSession st) <- getState
- (Just (UrlConnection con)) <- optionMaybe (parseUrlConnection'' (Ses._con defSes))
+ (Just (UrlConnection con)) <- optionMaybe (
+  (try $ parseUrlConnection'' (Ses._con defSes))
+  <|> (try $ parseUrlConnection (Ses._con defSes))
+  <?> "connection")
  (putState $ UrlSession st { Ses._con = con }) >> getState >>= return
 
 
@@ -134,7 +139,7 @@ parseUrlRedis' = do
 
 parseUrlRedis :: St Cmd
 parseUrlRedis = do
- (UrlSession ses) <- parseUrlSession R.defaultRedisSession <?> "session"
+ (UrlSession ses) <- try $ parseUrlSession R.defaultRedisSession
  (putState $ UrlRedis R.defaultRedis { R._ses = ses }) >> getState >>= return
  {-
  (putState $ UrlRedis R.defaultRedis { R._ses = ses })
@@ -182,9 +187,58 @@ parseUrlSsh :: St Cmd
 parseUrlSsh = do
  putState $ UrlSsh S.defaultSsh
  (UrlSsh ssh) <- getState
- (UrlSession ses) <- parseUrlSession S.defaultSshSession <?> "session"
+ (UrlSession ses) <- try $ parseUrlSession S.defaultSshSession
  (putState $ UrlSsh ssh { S._ses = ses }) >> getState >>= return
 
+{-
+ - zmq://host
+ - zmq://host:port
+ - zmq://host:port/options
+ - zmq://host/options
+ - zmq://user:(pass)@host
+ - zmq://user:(pass)@host/options
+ - etc.
+ -}
+parseUrlZMQ' :: St Cmd
+parseUrlZMQ' = do
+ _ <- string "zmq://"
+ parseUrlZMQ
+
+parseUrlZMQ :: St Cmd
+parseUrlZMQ = do
+ putState $ UrlZMQ ZMQ.defaultZMQ
+ (UrlZMQ zmq) <- getState
+ (UrlConnection con) <- (
+  (try $ parseUrlConnection ZMQ.defaultZMQConnection)
+  <|> (try $ parseUrlConnection'' ZMQ.defaultZMQConnection)
+  <?> "connection")
+ (putState $ UrlZMQ zmq { ZMQ._con = con }) >> getState >>= return
+
+{-
+ - file://path
+ -}
+parseUrlFile' :: St Cmd
+parseUrlFile' = do
+ _ <- string "file://"
+ parseUrlFile
+
+parseUrlFile :: St Cmd
+parseUrlFile = do
+ s <- many1 anyToken
+ return $ UrlFile F.File { F._path = s }
+
+-- URLS
+
+parseUrl :: St Cmd
+parseUrl = do
+ (try parseUrlAuth')
+ <|> (try parseUrlSession')
+ <|> (try parseUrlRedis')
+ <|> (try parseUrlSsh')
+ <|> (try parseUrlZMQ')
+ <|> (try parseUrlFile')
+ <|> (try parseUrlConnection')
+ <?> "url"
 
 -- seps
 
@@ -222,11 +276,7 @@ parseSep = do
 
 parseCmd :: St Cmd
 parseCmd = do
- (try parseUrlAuth')
- <|> (try parseUrlSession')
- <|> (try parseUrlRedis')
- <|> (try parseUrlSsh')
- <|> (try parseUrlConnection')
+ try parseUrl
  <|> (try parseSep)
  <?> "cmd"
 
