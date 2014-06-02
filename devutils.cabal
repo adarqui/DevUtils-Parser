@@ -15,7 +15,7 @@ library
    System.DevUtils
    System.DevUtils.Launch
    System.DevUtils.Parser
-   System.DevUtils.Url
+   System.DevUtils.Cmd
    System.DevUtils.Auth
    System.DevUtils.Redis
    System.DevUtils.Ssh
