@@ -19,6 +19,8 @@ library
    System.DevUtils.Auth
    System.DevUtils.Redis
    System.DevUtils.Ssh
+   System.DevUtils.ZMQ
+   System.DevUtils.File
    System.DevUtils.Connection
    System.DevUtils.Session
    System.DevUtils.Misc
