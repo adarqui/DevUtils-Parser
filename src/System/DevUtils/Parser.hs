@@ -32,6 +32,7 @@ port = do
  s <- try (many1 digit) <?> "digits"
  let i = read s :: Integer
  if (0 >= i || i > 65535) then return "port too large" else return s
+redisKey = many1 $ noneOf ",/ "
 
 
 {-
@@ -89,7 +90,7 @@ parseUrlConnection :: C.Connection -> St Cmd
 parseUrlConnection defCon = do
  dest <- field
  let portNum = C._port defCon
- maybePort <- try $ optionMaybe $ (string ":" >> port)
+ maybePort <- try $ optionMaybe $ (try $ string ":" >> port)
  (putState $ UrlConnection C.Connection { C._dest = dest , C._port = (maybe portNum (\x -> read x :: Integer) maybePort), C._type = C.UNKNOWN }) >> getState >>= return
 
 
@@ -139,35 +140,54 @@ parseUrlRedis' = do
 
 parseUrlRedis :: St Cmd
 parseUrlRedis = do
- (UrlSession ses) <- try $ parseUrlSession R.defaultRedisSession
- (putState $ UrlRedis R.defaultRedis { R._ses = ses }) >> getState >>= return
- {-
- (putState $ UrlRedis R.defaultRedis { R._ses = ses })
- (UrlRedis st) <- try parseUrlRedisOptions
- (putState $ UrlRedis st)
- getState >>= return
- -}
--- // FIXME, options parser
+ (try $ parseUrlSession R.defaultRedisSession) >>= \(UrlSession ses) ->
+  (putState $ UrlRedis R.defaultRedis { R._ses = ses }) >>
+   getState >>= \(UrlRedis st) ->
+    option (UrlRedis st) (try (char '/' >> parseUrlRedisOptions) >>= \(UrlRedis stopts) ->
+     option (UrlRedis stopts) (try (char '/' >> many1 anyToken) >>= \(s) ->
+      return (UrlRedis stopts { R._custom = (Just s) })))
+ <?> "redis"
+
+parseUrlRedisOptionsDb :: St Cmd
+parseUrlRedisOptionsDb = do
+ string "db="
+ (UrlRedis s) <- getState
+ num <- many1 digit
+ return $ UrlRedis s { R._db = (read num :: Integer) }
 
 parseUrlRedisOptionsPool :: St Cmd
 parseUrlRedisOptionsPool = do
  string "pool="
  (UrlRedis s) <- getState
- return $ UrlRedis s { R._pool = 5 }
+ num <- many1 digit
+ return $ UrlRedis s { R._pool = (read num :: Integer) }
 
 parseUrlRedisOptionsIdle :: St Cmd
 parseUrlRedisOptionsIdle = do
  string "idle="
  (UrlRedis s) <- getState
- return $ UrlRedis s { R._idle = 5 }
+ num <- many1 digit
+ return $ UrlRedis s { R._idle = (read num :: Integer) }
+
+parseUrlRedisOptionsPrefix :: St Cmd
+parseUrlRedisOptionsPrefix = do
+ string "prefix="
+ (UrlRedis s) <- getState
+ rkey <- redisKey
+ return $ UrlRedis s { R._prefix = Just rkey }
 
 parseUrlRedisOptions :: St Cmd
 parseUrlRedisOptions = do
--- f <- sepBy (field' (", ")) (skipMany1 (space <|> char ','))
- char '/'
- try parseUrlRedisOptionsPool
- <|> try parseUrlRedisOptionsIdle
- <?> "redisOption"
+ (UrlRedis st) <- (try parseUrlRedisOptionsDb
+        <|> try parseUrlRedisOptionsPool
+        <|> try parseUrlRedisOptionsIdle
+        <|> try parseUrlRedisOptionsPrefix
+        <?> "redisOption"
+       )
+ putState (UrlRedis st)
+ v <- option (UrlRedis st) (try $ char ',' >> parseUrlRedisOptions)
+ return v
+
 
 {-
  - ssh://host

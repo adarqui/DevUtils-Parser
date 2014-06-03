@@ -11,9 +11,10 @@ import qualified System.DevUtils.Session as Ses
 data Redis = Redis {
  _ses :: Ses.Session,
  _db :: Integer,
--- _prefix :: Maybe String,
+ _prefix :: Maybe String,
  _pool :: Integer,
- _idle :: Integer
+ _idle :: Integer,
+ _custom :: Maybe String
 } deriving (Show, Read)
 
 defaultRedisSession :: Ses.Session
@@ -27,7 +28,8 @@ defaultRedis :: Redis
 defaultRedis = Redis {
   _ses = defaultRedisSession,
   _db = 0,
---  _prefix = Nothing,
+  _prefix = Nothing,
   _pool = 50,
-  _idle = 30
+  _idle = 30,
+  _custom = Nothing
  }
