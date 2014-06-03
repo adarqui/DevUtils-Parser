@@ -125,6 +125,16 @@ parseUrlSession defSes = do
 
 
 {-
+ - resque:// same as redis://
+ -}
+
+parseUrlResque' :: St Cmd
+parseUrlResque' = do
+ _ <- string "resque://"
+ (UrlRedis red) <- parseUrlRedis
+ return $ UrlResque red
+
+{-
  - redis://host
  - redis://host:port
  - redis://host:port/options
@@ -254,6 +264,7 @@ parseUrl = do
  (try parseUrlAuth')
  <|> (try parseUrlSession')
  <|> (try parseUrlRedis')
+ <|> (try parseUrlResque')
  <|> (try parseUrlSsh')
  <|> (try parseUrlZMQ')
  <|> (try parseUrlFile')

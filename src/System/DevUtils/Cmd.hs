@@ -13,6 +13,7 @@ import System.DevUtils.Field
 
 data Cmd =
  UrlRedis Redis
+ | UrlResque Redis
  | UrlSsh Ssh
  | UrlZMQ ZMQ
  | UrlFile File
