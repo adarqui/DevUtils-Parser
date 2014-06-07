@@ -8,18 +8,16 @@ import Text.Parsec.String
 
 import qualified Control.Applicative as APP
 
-import qualified System.DevUtils.Redis as R
-import qualified System.DevUtils.Ssh as S
-import qualified System.DevUtils.ZMQ as ZMQ
-import qualified System.DevUtils.File as F
-import qualified System.DevUtils.Auth as A
-import qualified System.DevUtils.Connection as C
-import qualified System.DevUtils.Session as Ses
+import qualified System.DevUtils.Base.Url.Redis as R
+import qualified System.DevUtils.Base.Url.Ssh as S
+import qualified System.DevUtils.Base.Url.ZMQ as ZMQ
+import qualified System.DevUtils.Base.Url.File as F
+import qualified System.DevUtils.Base.Url.Auth as A
+import qualified System.DevUtils.Base.Url.Connection as C
+import qualified System.DevUtils.Base.Url.Session as Ses
+import System.DevUtils.Base.Url.Field
 
-import System.DevUtils.Cmd
-import System.DevUtils.Field
---import System.DevUtils.Url
---import System.DevUtils.Argv
+import System.DevUtils.Parser.Cmd
 
 
 type St a = GenParser Char Cmd a
