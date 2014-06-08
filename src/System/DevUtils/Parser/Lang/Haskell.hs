@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module System.DevUtils.Parser.Lang.Haskell (
  lexer,
  identifier,
