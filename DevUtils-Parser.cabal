@@ -17,6 +17,9 @@ library
    System.DevUtils.Parser.KV
    System.DevUtils.Parser.KV.String
    System.DevUtils.Parser.KV.ByteString
+   System.DevUtils.Parser.Lines
+   System.DevUtils.Parser.Lines.String
+   System.DevUtils.Parser.Lines.ByteString
   build-depends:       base ==4.7.*, parsec ==3.1.5, bytestring ==0.10.4.0, DevUtils-Base
   GHC-Options:         -Wall -rtsopts -fno-warn-unused-do-bind
   hs-source-dirs:      src
