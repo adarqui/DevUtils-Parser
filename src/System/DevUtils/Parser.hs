@@ -6,8 +6,6 @@ module System.DevUtils.Parser (
 import Text.Parsec
 import Text.Parsec.String
 
-import qualified Control.Applicative as APP
-
 import qualified System.DevUtils.Base.Url.Redis as R
 import qualified System.DevUtils.Base.Url.Ssh as S
 import qualified System.DevUtils.Base.Url.ZMQ as ZMQ
@@ -30,6 +28,7 @@ port = do
  s <- try (many1 digit) <?> "digits"
  let i = read s :: Integer
  if (0 >= i || i > 65535) then return "port too large" else return s
+
 redisKey = many1 $ noneOf ",/ "
 
 
@@ -56,8 +55,8 @@ parseUrlAuth = do
  (putState $ UrlAuth A.Auth { A._user = user, A._pass = pass }) >> getState >>= return
 
 -- con:// wrapper
-parseUrlConnectionWrapper :: C.Connection -> String -> C.ConnectionType -> St Cmd
-parseUrlConnectionWrapper defCon prefix conType = do
+parseUrlConnectionWrapper :: C.Connection -> C.ConnectionType -> St Cmd
+parseUrlConnectionWrapper defCon conType = do
  _ <- parseUrlConnection defCon
  modifyState (\(UrlConnection x) -> UrlConnection x { C._type = conType })
  getState >>= return
@@ -72,10 +71,10 @@ parseUrlConnection' = parseUrlConnection'' C.defaultConnection
 
 parseUrlConnection'' :: C.Connection -> St Cmd
 parseUrlConnection'' defCon = do
- do { (try (string "con://")) ; parseUrlConnectionWrapper defCon "con" C.UNKNOWN }
- <|> do { (try (string "tcp://")) ; parseUrlConnectionWrapper defCon "tcp" C.TCP }
- <|> do { (try (string "udp://")) ; parseUrlConnectionWrapper defCon "udp" C.UDP }
- <|> do { (try (string "unix://")) ; parseUrlConnectionWrapper defCon "unix" C.UNIX }
+ do { (try (string "con://")) ; parseUrlConnectionWrapper defCon C.UNKNOWN }
+ <|> do { (try (string "tcp://")) ; parseUrlConnectionWrapper defCon C.TCP }
+ <|> do { (try (string "udp://")) ; parseUrlConnectionWrapper defCon C.UDP }
+ <|> do { (try (string "unix://")) ; parseUrlConnectionWrapper defCon C.UNIX }
  <?> "prefix"
 
 
@@ -158,28 +157,28 @@ parseUrlRedis = do
 
 parseUrlRedisOptionsDb :: St Cmd
 parseUrlRedisOptionsDb = do
- string "db="
+ _ <- string "db="
  (UrlRedis s) <- getState
  num <- many1 digit
  return $ UrlRedis s { R._db = (read num :: Integer) }
 
 parseUrlRedisOptionsPool :: St Cmd
 parseUrlRedisOptionsPool = do
- string "pool="
+ _ <- string "pool="
  (UrlRedis s) <- getState
  num <- many1 digit
  return $ UrlRedis s { R._pool = (read num :: Integer) }
 
 parseUrlRedisOptionsIdle :: St Cmd
 parseUrlRedisOptionsIdle = do
- string "idle="
+ _ <- string "idle="
  (UrlRedis s) <- getState
  num <- many1 digit
  return $ UrlRedis s { R._idle = (read num :: Integer) }
 
 parseUrlRedisOptionsPrefix :: St Cmd
 parseUrlRedisOptionsPrefix = do
- string "prefix="
+ _ <- string "prefix="
  (UrlRedis s) <- getState
  rkey <- redisKey
  return $ UrlRedis s { R._prefix = Just rkey }
@@ -285,7 +284,7 @@ parseSepDot = parseSep' '.'
 
 parseSep' :: Char -> St Cmd
 parseSep' delim = do
- string $ delim : "://"
+ _ <- string $ delim : "://"
  parseSep'' delim
 
 parseSep'' :: Char -> St Cmd

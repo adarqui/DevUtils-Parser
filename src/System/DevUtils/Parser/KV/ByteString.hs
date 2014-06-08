@@ -22,6 +22,7 @@ data KV = KV {
  _comment :: St String
 }
 
+defaultKV :: KV
 defaultKV = KV {
  _ident = (many1 $ try letter <|> try digit <|> try (oneOf "_-")),
  _delim = (try (string "=") <|> try (string "->") <|> try (string ":")),
@@ -29,6 +30,7 @@ defaultKV = KV {
  _comment = (try (string "#") <|> try (string ";"))
 }
 
+weirdKV :: KV
 weirdKV = KV {
  _ident = (many1 $ try letter),
  _delim = (try (string ">")),
@@ -73,9 +75,9 @@ line = do
 
 parseKV :: St [Pair]
 parseKV = do
- lines <- many line
+ kvlines <- many line
        <?> "line"
- return $ catMaybes lines
+ return $ catMaybes kvlines
 
 runKV' :: KV -> St [Pair] -> B.ByteString -> Either String [Pair]
 runKV' kv p input = do
