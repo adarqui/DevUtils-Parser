@@ -14,6 +14,9 @@ library
   exposed-modules:
    System.DevUtils.Parser
    System.DevUtils.Parser.Cmd
-  build-depends:       base ==4.7.*, parsec ==3.1.5, DevUtils-Base
+   System.DevUtils.Parser.KV
+   System.DevUtils.Parser.KV.String
+   System.DevUtils.Parser.KV.ByteString
+  build-depends:       base ==4.7.*, parsec ==3.1.5, bytestring ==0.10.4.0, DevUtils-Base
   GHC-Options:         -Wall -rtsopts
   hs-source-dirs:      src
