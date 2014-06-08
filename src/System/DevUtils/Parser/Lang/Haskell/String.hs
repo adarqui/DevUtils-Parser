@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module System.DevUtils.Parser.Lang.Haskell (
+module System.DevUtils.Parser.Lang.Haskell.String (
  lexer,
  identifier,
  reserved,
