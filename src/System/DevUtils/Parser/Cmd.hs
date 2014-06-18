@@ -3,6 +3,7 @@ module System.DevUtils.Parser.Cmd (
 ) where
 
 import System.DevUtils.Base.Url.Redis
+import System.DevUtils.Base.Url.MySQL
 import System.DevUtils.Base.Url.Ssh
 import System.DevUtils.Base.Url.ZMQ
 import System.DevUtils.Base.Url.File
@@ -14,6 +15,7 @@ import System.DevUtils.Base.Url.Field
 data Cmd =
  UrlRedis Redis
  | UrlResque Redis
+ | UrlMySQL MySQL
  | UrlSsh Ssh
  | UrlZMQ ZMQ
  | UrlFile File

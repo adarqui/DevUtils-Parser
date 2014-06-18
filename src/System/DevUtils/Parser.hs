@@ -7,6 +7,7 @@ import Text.Parsec
 import Text.Parsec.String
 
 import qualified System.DevUtils.Base.Url.Redis as R
+import qualified System.DevUtils.Base.Url.MySQL as M
 import qualified System.DevUtils.Base.Url.Ssh as S
 import qualified System.DevUtils.Base.Url.ZMQ as ZMQ
 import qualified System.DevUtils.Base.Url.File as F
@@ -30,6 +31,7 @@ port = do
  if (0 >= i || i > 65535) then return "port too large" else return s
 
 redisKey = many1 $ noneOf ",/ "
+mysqlDb = many1 $ (letter <|> oneOf "_-:")
 
 
 {-
@@ -197,6 +199,44 @@ parseUrlRedisOptions = do
 
 
 {-
+ - mysql://user:(pass)@host
+ - mysql://user:(pass)@host:port
+ - mysql://user:(pass)@host/options
+ - mysql://user:(pass)@host:port/options
+ - etc.
+ -}
+parseUrlMySQL' :: St Cmd
+parseUrlMySQL' = do
+ _ <- string "mysql://"
+ parseUrlMySQL
+
+parseUrlMySQL :: St Cmd
+parseUrlMySQL = do
+ (try $ parseUrlSession M.defaultMySQLSession) >>= \(UrlSession ses) ->
+  (putState $ UrlMySQL M.defaultMySQL { M._ses = ses }) >>
+   getState >>= \(UrlMySQL st) ->
+    option (UrlMySQL st) (try (char '/' >> parseUrlMySQLOptions) >>= \(UrlMySQL stopts) ->
+     option (UrlMySQL stopts) (try (char '/' >> many1 anyToken) >>= \(s) ->
+      return (UrlMySQL stopts { M._custom = (Just s) })))
+ <?> "mysql"
+
+parseUrlMySQLOptionsDb :: St Cmd
+parseUrlMySQLOptionsDb = do
+ _ <- string "db="
+ (UrlMySQL s) <- getState
+ name <- mysqlDb
+ return $ UrlMySQL s { M._db = Just name }
+
+parseUrlMySQLOptions :: St Cmd
+parseUrlMySQLOptions = do
+ (UrlMySQL st) <- (try parseUrlMySQLOptionsDb
+        <?> "mysqlOption"
+       )
+ putState (UrlMySQL st)
+ v <- option (UrlMySQL st) (try $ char ',' >> parseUrlMySQLOptions)
+ return v
+
+{-
  - ssh://host
  - ssh://host:port
  - ssh://host:port/options
@@ -261,6 +301,7 @@ parseUrl = do
  (try parseUrlAuth')
  <|> (try parseUrlSession')
  <|> (try parseUrlRedis')
+ <|> (try parseUrlMySQL')
  <|> (try parseUrlResque')
  <|> (try parseUrlSsh')
  <|> (try parseUrlZMQ')
