@@ -18,6 +18,9 @@ import System.DevUtils.Base.Url.Field
 
 import System.DevUtils.Parser.Cmd
 
+import Data.Word
+ (Word16)
+
 
 type St a = GenParser Char Cmd a
 
@@ -90,7 +93,7 @@ parseUrlConnection defCon = do
  dest <- field
  let portNum = C._port defCon
  maybePort <- try $ optionMaybe $ (try $ string ":" >> port)
- (putState $ UrlConnection C.Connection { C._dest = dest , C._port = (maybe portNum (\x -> read x :: Integer) maybePort), C._type = C.UNKNOWN }) >> getState >>= return
+ (putState $ UrlConnection C.Connection { C._dest = dest , C._port = (maybe portNum (\x -> read x :: Word16) maybePort), C._type = C.UNKNOWN }) >> getState >>= return
 
 
 {-
