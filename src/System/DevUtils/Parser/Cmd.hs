@@ -7,6 +7,8 @@ import System.DevUtils.Base.Url.Memcache
 import System.DevUtils.Base.Url.MySQL
 import System.DevUtils.Base.Url.Ssh
 import System.DevUtils.Base.Url.ZMQ
+import System.DevUtils.Base.Url.UberLog
+import System.DevUtils.Base.Url.WWW
 import System.DevUtils.Base.Url.File
 import System.DevUtils.Base.Url.Auth
 import System.DevUtils.Base.Url.Connection
@@ -27,6 +29,8 @@ data Cmd =
  | UrlMVar
  | UrlIORef
  | UrlMemcache Memcache
+ | UrlUberLog UberLog
+ | UrlWWW WWW
  | SepFields Fields
  | CmdNone
  deriving (Show, Read)
