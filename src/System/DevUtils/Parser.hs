@@ -201,6 +201,16 @@ parseUrlRedisOptions = do
  return v
 
 
+{- TODO FIXME
+ - memcache://
+ -}
+
+parseUrlMemcache' :: St Cmd
+parseUrlMemcache' = do
+ _ <- string "memcache://"
+ return UrlMemcache
+
+
 {-
  - mysql://user:(pass)@host
  - mysql://user:(pass)@host:port
@@ -316,6 +326,14 @@ parseUrlMVar' = do
  _ <- string "mvar://"
  return UrlMVar
 
+{-
+ - ioref://
+ -}
+
+parseUrlIORef' :: St Cmd
+parseUrlIORef' = do
+ _ <- string "ioref://"
+ return UrlIORef
 
 -- URLS
 
@@ -324,6 +342,7 @@ parseUrl = do
  (try parseUrlAuth')
  <|> (try parseUrlSession')
  <|> (try parseUrlRedis')
+ <|> (try parseUrlMemcache')
  <|> (try parseUrlMySQL')
  <|> (try parseUrlResque')
  <|> (try parseUrlSsh')
@@ -332,6 +351,7 @@ parseUrl = do
  <|> (try parseUrlConnection')
  <|> (try parseUrlChan')
  <|> (try parseUrlMVar')
+ <|> (try parseUrlIORef')
  <?> "url"
 
 -- seps

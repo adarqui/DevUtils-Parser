@@ -25,6 +25,7 @@ data Cmd =
  | UrlChan
  | UrlMVar
  | UrlIORef
+ | UrlMemcache
  | SepFields Fields
  | CmdNone
  deriving (Show, Read)
