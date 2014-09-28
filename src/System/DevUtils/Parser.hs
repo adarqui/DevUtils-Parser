@@ -297,6 +297,26 @@ parseUrlFile = do
  s <- many1 anyToken
  return $ UrlFile F.File { F._path = s }
 
+
+{-
+ - chan://
+ -}
+
+parseUrlChan' :: St Cmd
+parseUrlChan' = do
+ _ <- string "chan://"
+ return UrlChan
+
+{-
+ - mvar://
+ -}
+
+parseUrlMVar' :: St Cmd
+parseUrlMVar' = do
+ _ <- string "mvar://"
+ return UrlMVar
+
+
 -- URLS
 
 parseUrl :: St Cmd
@@ -310,6 +330,8 @@ parseUrl = do
  <|> (try parseUrlZMQ')
  <|> (try parseUrlFile')
  <|> (try parseUrlConnection')
+ <|> (try parseUrlChan')
+ <|> (try parseUrlMVar')
  <?> "url"
 
 -- seps
