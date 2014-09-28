@@ -10,6 +10,7 @@ import Text.Parsec.String
 import System.DevUtils.Parser.Cmd as A
 
 import qualified System.DevUtils.Base.Url.Redis as R
+import qualified System.DevUtils.Base.Url.Memcache as Memcache
 import qualified System.DevUtils.Base.Url.MySQL as M
 import qualified System.DevUtils.Base.Url.Ssh as S
 import qualified System.DevUtils.Base.Url.ZMQ as ZMQ
@@ -206,13 +207,25 @@ parseUrlRedisOptions = do
 
 {- TODO FIXME
  - memcache://
+ - memcache://host
+ - memcache://host:port
+ - etc.
  -}
 
 parseUrlMemcache' :: St Cmd
 parseUrlMemcache' = do
  _ <- string "memcache://"
- return UrlMemcache
+ parseUrlMemcache'
 
+parseUrlMemcache :: St Cmd
+parseUrlMemcache = do
+ putState $ UrlMemcache Memcache.defaultMemcache
+ (UrlMemcache memcache) <- getState
+ (UrlConnection con) <- (
+  (try $ parseUrlConnection Memcache.defaultMemcacheConnection)
+  <|> (try $ parseUrlConnection'' Memcache.defaultMemcacheConnection)
+  <?> "connection")
+ (putState $ UrlMemcache memcache { Memcache._con = con }) >> getState >>= return
 
 {-
  - mysql://user:(pass)@host

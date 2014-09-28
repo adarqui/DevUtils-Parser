@@ -3,6 +3,7 @@ module System.DevUtils.Parser.Cmd (
 ) where
 
 import System.DevUtils.Base.Url.Redis
+import System.DevUtils.Base.Url.Memcache
 import System.DevUtils.Base.Url.MySQL
 import System.DevUtils.Base.Url.Ssh
 import System.DevUtils.Base.Url.ZMQ
@@ -25,7 +26,7 @@ data Cmd =
  | UrlChan
  | UrlMVar
  | UrlIORef
- | UrlMemcache
+ | UrlMemcache Memcache
  | SepFields Fields
  | CmdNone
  deriving (Show, Read)
