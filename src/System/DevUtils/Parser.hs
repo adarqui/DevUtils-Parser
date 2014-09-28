@@ -1,10 +1,13 @@
 module System.DevUtils.Parser (
+ module A,
  parseCmd,
- runCmd,
+ runCmd
 ) where
 
 import Text.Parsec
 import Text.Parsec.String
+
+import System.DevUtils.Parser.Cmd as A
 
 import qualified System.DevUtils.Base.Url.Redis as R
 import qualified System.DevUtils.Base.Url.MySQL as M
@@ -14,9 +17,9 @@ import qualified System.DevUtils.Base.Url.File as F
 import qualified System.DevUtils.Base.Url.Auth as A
 import qualified System.DevUtils.Base.Url.Connection as C
 import qualified System.DevUtils.Base.Url.Session as Ses
+
 import System.DevUtils.Base.Url.Field
 
-import System.DevUtils.Parser.Cmd
 
 import Data.Word
  (Word16)
