@@ -22,6 +22,9 @@ data Cmd =
  | UrlAuth Auth
  | UrlConnection Connection
  | UrlSession Session
+ | UrlChan
+ | UrlMVar
+ | UrlIORef
  | SepFields Fields
  | CmdNone
  deriving (Show, Read)
