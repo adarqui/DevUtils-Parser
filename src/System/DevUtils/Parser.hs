@@ -192,12 +192,20 @@ parseUrlRedisOptionsPrefix = do
  rkey <- redisKey
  return $ UrlRedis s { R._prefix = Just rkey }
 
+parseUrlRedisOptionsKey :: St Cmd
+parseUrlRedisOptionsKey = do
+ _ <- string "key="
+ (UrlRedis s) <- getState
+ rkey <- redisKey
+ return $ UrlRedis s { R._key = Just rkey }
+
 parseUrlRedisOptions :: St Cmd
 parseUrlRedisOptions = do
  (UrlRedis st) <- (try parseUrlRedisOptionsDb
         <|> try parseUrlRedisOptionsPool
         <|> try parseUrlRedisOptionsIdle
         <|> try parseUrlRedisOptionsPrefix
+        <|> try parseUrlRedisOptionsKey
         <?> "redisOption"
        )
  putState (UrlRedis st)
